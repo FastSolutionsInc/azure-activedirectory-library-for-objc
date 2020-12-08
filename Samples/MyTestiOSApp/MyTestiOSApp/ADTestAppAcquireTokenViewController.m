@@ -25,6 +25,7 @@
 #import "ADTestAppSettings.h"
 #import "NSString+ADHelperMethods.h"
 #import <ADALiOS/ADAL.h>
+#import <WebKit/WebKit.h>
 
 @interface ADTestAppAcquireTokenViewController ()
 
@@ -45,7 +46,7 @@
     IBOutlet UITextView* _resultView;
     
     IBOutlet UIView* _authView;
-    IBOutlet UIWebView* _webView;
+    IBOutlet WKWebView* _webView;
     
     BOOL _userIdEdited;
 }

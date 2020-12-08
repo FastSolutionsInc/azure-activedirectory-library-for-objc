@@ -21,7 +21,7 @@
 #import "ADAuthenticationViewController.h"
 #import "ADLogger.h"
 
-@interface ADAuthenticationViewController ( ) <ADAuthenticationDelegate, UIWebViewDelegate>
+@interface ADAuthenticationViewController ( ) <ADAuthenticationDelegate, WKNavigationDelegate>
 @end
 
 @implementation ADAuthenticationViewController
@@ -80,7 +80,7 @@
         [_activityIndicator startAnimating];
 }
 
-// Launches the UIWebView with a start URL. The UIWebView is halted when a
+// Launches the WKWebView with a start URL. The WKWebView is halted when a
 // prefix of the end URL is reached.
 - (BOOL)startWithURL:(NSURL *)startURL endAtURL:(NSURL *)endURL
 {
@@ -89,11 +89,11 @@
     if ( _webAuthenticationWebViewController )
     {
         // Delegate set up: this object is the delegate for the ADAuthenticationWebViewController,
-        // and the controller will have established itself as the delegate for the UIWebView. However,
-        // this object also wants events from the UIWebView to control the activity indicator so we
+        // and the controller will have established itself as the delegate for the WKWebView. However,
+        // this object also wants events from the WKWebView to control the activity indicator so we
         // hijack the delegate here and forward events as they are seen in this object.
         _webAuthenticationWebViewController.delegate = self;
-        _webView.delegate                            = self;
+        _webView.navigationDelegate = self;
         
         [_webAuthenticationWebViewController start];
         return YES;
@@ -127,21 +127,16 @@
     [_delegate webAuthenticationDidFailWithError:error];
 }
 
-#pragma mark - UIWebViewDelegate Protocol
+#pragma mark - WKUIDelegate
 
-- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType
-{
-#pragma unused(webView)
-#pragma unused(navigationType)
-    
-    // Forward to the UIWebView controller
-    return [_webAuthenticationWebViewController webView:webView shouldStartLoadWithRequest:request navigationType:navigationType];
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    [_webAuthenticationWebViewController webView:webView
+                 decidePolicyForNavigationAction:navigationAction
+                                 decisionHandler:decisionHandler];
 }
 
-- (void)webViewDidStartLoad:(UIWebView *)webView
-{
+- (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(null_unspecified WKNavigation *)navigation {
 #pragma unused(webView)
-
     // Start the activity indicator after 2 second delay
     _loading = YES;
     [NSTimer scheduledTimerWithTimeInterval:2.0
@@ -149,33 +144,32 @@
                                    selector:@selector(onStartActivityIndicator:)
                                    userInfo:nil
                                     repeats:NO];
-    
-    // Forward to the UIWebView controller
-    [_webAuthenticationWebViewController webViewDidStartLoad:webView];
+    // Forward to the WKWebView controller
+    [_webAuthenticationWebViewController webView:webView
+                   didStartProvisionalNavigation:navigation];
 }
 
-- (void)webViewDidFinishLoad:(UIWebView *)webView
-{
+- (void)webView:(WKWebView *)webView didFinishNavigation:(null_unspecified WKNavigation *)navigation {
 #pragma unused(webView)
-
     // Disable the activity indicator
     _loading = NO;
     [_activityIndicator stopAnimating];
     
-    // Forward to the UIWebView controller
-    [_webAuthenticationWebViewController webViewDidFinishLoad:webView];
+    // Forward to the WKWebView controller
+    [_webAuthenticationWebViewController webView:webView
+                             didFinishNavigation:navigation];
 }
 
-- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error
-{
+- (void)webView:(WKWebView *)webView didFailNavigation:(null_unspecified WKNavigation *)navigation withError:(NSError *)error {
 #pragma unused(webView)
-    
     // Disable the activity indicator
     _loading = NO;
     [_activityIndicator stopAnimating];
 
-    // Forward to the UIWebView controller
-    [_webAuthenticationWebViewController webView:webView didFailLoadWithError:error];
+    // Forward to the WKWebView controller
+    [_webAuthenticationWebViewController webView:webView
+                               didFailNavigation:navigation
+                                       withError:error];
 }
 
 @end
